@@ -3,7 +3,6 @@ version: '3.8'
 services:
   fastapi:
     build: .
-    container_name: fastapi_app
     ports:
       - "8000:8000"
     depends_on:
@@ -11,7 +10,6 @@ services:
 
   nginx:
     image: nginx:latest
-    container_name: nginx_proxy
     ports:
       - "80:80"
     volumes:
