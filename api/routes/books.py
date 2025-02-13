@@ -59,7 +59,7 @@ async def get_book(book_id: int) -> JSONResponse:
         )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content=book 
+        content=book.model_dump()
     )
 
 
