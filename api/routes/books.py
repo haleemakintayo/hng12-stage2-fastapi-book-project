@@ -41,12 +41,10 @@ async def create_book(book: Book):
     )
 
 
-@router.get("/", response_model=List[Book], status_code=status.HTTP_200_OK)
-async def get_books() -> JSONResponse:
-    return JSONResponse(content=db.books)
+
 
 @router.get("/{book_id}", response_model=Book, status_code=status.HTTP_200_OK)
-async def get_book(book_id: int) -> JSONResponse:
+async def get_book(book_id: int, book: Book) -> JSONResponse:
     book = db.books.get(book_id)
     if not book:
         return JSONResponse(
