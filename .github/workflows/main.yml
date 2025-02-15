@@ -27,31 +27,52 @@ jobs:
       - name: Run Tests
         run: pytest
 
+  name: deploy
+on:
+  push:
+    branches:
+      - main
+jobs:
   deploy:
-    needs: test
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Build Docker Image
-        run: |
-          docker build -t my-fastapi-app .
-
-      - name: Deploy to Google Cloud VM via SSH
-        uses: appleboy/ssh-action@master
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
-          host: ${{ secrets.GCE_HOST }}          
-          username: ${{ secrets.GCE_USERNAME }}    
-          key: ${{ secrets.GCE_PRIVATE_KEY }}      
+          python-version: 3.12
+      # Deploy to server
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{secrets.SERVER_HOST}}
+          key: ${{secrets.SERVER_SSH_KEY}}
+          username: ${{secrets.SERVER_USERNAME}}
           script: |
-            # Stop and remove any existing container
-            docker stop my-fastapi-app || true
-            docker rm my-fastapi-app || true
-            
-            # Build the Docker image on the VM (optional if you want to rebuild there)
-            docker build -t my-fastapi-app .
-            
-            # Run the container with your desired configuration
-            docker run -d --restart always -p 80:80 --name my-fastapi-app my-fastapi-app
+            echo “Starting deployment...”
+            # Create and navigate to project directory
+            mkdir -p haleemakintayo-fastapi-stage12-task
+            cd haleemakintayo-fastapi-stage12-task
+            # Clone the repository into the project directory
+            git clone https://github.com/haleemakintayo/hng12-stage2-fastapi-book-project.git .
+            # Pull latest changes
+            echo “Pulling latest changes...”
+            git fetch --all
+            git pull origin main
+            # Setup virtual environment
+            echo “Setting up virtual environment...”
+            python3 -m venv venv || exit 1
+            source venv/bin/activate || exit 1
+            #Install fastapi
+            pip install fastapi || exit 1
+            echo “FastAPI installed successfully”
+            # Install dependencies
+            echo “Installing dependencies...”
+            pip install -r requirements.txt || exit 1
+            # Stop existing application if running
+            echo “Stopping existing application...”
+            killall uvicorn || echo “No existing process found”
+            echo “Application stopped successfully”
+            # Start application
+            echo “Starting application...”
+            nohup uvicorn main:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
+            echo “Application started successfully”
