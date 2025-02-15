@@ -27,52 +27,51 @@ jobs:
       - name: Run Tests
         run: pytest
 
-  name: deploy
-on:
-  push:
-    branches:
-      - main
-jobs:
   deploy:
+    needs: test
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.12
-      # Deploy to server
+          python-version: '3.12'
+
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{secrets.SERVER_HOST}}
-          key: ${{secrets.SERVER_SSH_KEY}}
-          username: ${{secrets.SERVER_USERNAME}}
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            echo “Starting deployment...”
+            echo "Starting deployment..."
             # Create and navigate to project directory
             mkdir -p haleemakintayo-fastapi-stage12-task
             cd haleemakintayo-fastapi-stage12-task
             # Clone the repository into the project directory
             git clone https://github.com/haleemakintayo/hng12-stage2-fastapi-book-project.git .
             # Pull latest changes
-            echo “Pulling latest changes...”
+            echo "Pulling latest changes..."
             git fetch --all
             git pull origin main
             # Setup virtual environment
-            echo “Setting up virtual environment...”
+            echo "Setting up virtual environment..."
             python3 -m venv venv || exit 1
             source venv/bin/activate || exit 1
-            #Install fastapi
+            # Install FastAPI
             pip install fastapi || exit 1
-            echo “FastAPI installed successfully”
+            echo "FastAPI installed successfully"
             # Install dependencies
-            echo “Installing dependencies...”
+            echo "Installing dependencies..."
             pip install -r requirements.txt || exit 1
             # Stop existing application if running
-            echo “Stopping existing application...”
-            killall uvicorn || echo “No existing process found”
-            echo “Application stopped successfully”
+            echo "Stopping existing application..."
+            killall uvicorn || echo "No existing process found"
+            echo "Application stopped successfully"
             # Start application
-            echo “Starting application...”
+            echo "Starting application..."
             nohup uvicorn main:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
-            echo “Application started successfully”
+            echo "Application started successfully"
